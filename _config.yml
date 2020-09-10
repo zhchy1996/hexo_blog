@@ -104,3 +104,12 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: ''
+
+# Admin
+admin:
+  username: zhchy
+  password_hash: $2a$10$b6k/qQzL6JwDERqikBRWD.9XPmxAZMTcWnc3V/MFbYJB.VTwzCuTa
+  secret: my super secret phrase
+metadata:
+  author_id: defaultAuthorId
+  language:
