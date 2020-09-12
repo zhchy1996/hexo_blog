@@ -1,10 +1,10 @@
----
 title: JavaScript权威指南
 cription: JavaScript权威指南笔记
 categories:
- - JavaScript
+  - JavaScript
 tags:
- - js
+  - js
+date: 2020-09-10 10:00:00
 ---
 
 # js核心
