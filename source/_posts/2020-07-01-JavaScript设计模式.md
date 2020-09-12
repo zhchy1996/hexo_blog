@@ -1,12 +1,11 @@
----
 title: JavaScript设计模式
 description: 常用JavaScript设计模式
 categories:
- - JavaScript
+  - JavaScript
 tags:
- - JavaScript
+  - JavaScript
+date: 2020-09-10 19:32:00
 ---
-
 # 设计模式
 ## 道
 ### SOLID设计原则
@@ -930,19 +929,3 @@ const proxyAddAll = (function(){
 代理模式十分多样，可以是为了加强控制、拓展功能、提高性能，也可以仅仅是为了优化我们的代码结构、实现功能的解耦。
 
 ---
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
