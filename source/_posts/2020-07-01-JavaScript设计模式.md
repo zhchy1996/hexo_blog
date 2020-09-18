@@ -929,8 +929,478 @@ const proxyAddAll = (function(){
 代理模式十分多样，可以是为了加强控制、拓展功能、提高性能，也可以仅仅是为了优化我们的代码结构、实现功能的解耦。
 
 ---
-# test
-## test1
-### test3
-#### test4
-##### test5
+# 策略模式
+## 例子
+### 错误做法  
+```js
+function askPrice(tag, originPrice) {
+
+  // 处理预热价
+  if(tag === 'pre') {
+    if(originPrice >= 100) {
+      return originPrice - 20
+    } 
+    return originPrice * 0.9
+  }
+  // 处理大促价
+  if(tag === 'onSale') {
+    if(originPrice >= 100) {
+      return originPrice - 30
+    } 
+    return originPrice * 0.8
+  }
+
+  // 处理返场价
+  if(tag === 'back') {
+    if(originPrice >= 200) {
+      return originPrice - 50
+    }
+    return originPrice
+  }
+
+  // 处理尝鲜价
+  if(tag === 'fresh') {
+     return originPrice * 0.5
+  }
+  
+  // 处理新人价
+  if(tag === 'newUser') {
+    if(originPrice >= 100) {
+      return originPrice - 50
+    }
+    return originPrice
+  }
+}
+```
+### 单一功能改造
+```js
+// 处理预热价
+function prePrice(originPrice) {
+  if(originPrice >= 100) {
+    return originPrice - 20
+  } 
+  return originPrice * 0.9
+}
+
+// 处理大促价
+function onSalePrice(originPrice) {
+  if(originPrice >= 100) {
+    return originPrice - 30
+  } 
+  return originPrice * 0.8
+}
+
+// 处理返场价
+function backPrice(originPrice) {
+  if(originPrice >= 200) {
+    return originPrice - 50
+  }
+  return originPrice
+}
+
+// 处理尝鲜价
+function freshPrice(originPrice) {
+  return originPrice * 0.5
+}
+
+function askPrice(tag, originPrice) {
+  // 处理预热价
+  if(tag === 'pre') {
+    return prePrice(originPrice)
+  }
+  // 处理大促价
+  if(tag === 'onSale') {
+    return onSalePrice(originPrice)
+  }
+
+  // 处理返场价
+  if(tag === 'back') {
+    return backPrice(originPrice)
+  }
+
+  // 处理尝鲜价
+  if(tag === 'fresh') {
+     return freshPrice(originPrice)
+  }
+}
+```
+### 对扩展开放，对修改封闭
+对象映射
+```js
+// 定义一个询价处理器对象
+const priceProcessor = {
+  pre(originPrice) {
+    if (originPrice >= 100) {
+      return originPrice - 20;
+    }
+    return originPrice * 0.9;
+  },
+  onSale(originPrice) {
+    if (originPrice >= 100) {
+      return originPrice - 30;
+    }
+    return originPrice * 0.8;
+  },
+  back(originPrice) {
+    if (originPrice >= 200) {
+      return originPrice - 50;
+    }
+    return originPrice;
+  },
+  fresh(originPrice) {
+    return originPrice * 0.5;
+  },
+};
+```
+
+## 定义
+定义一系列的算法,把它们一个个封装起来, 并且使它们可相互替换
+
+---
+# 状态模式
+## 例子
+- 美式咖啡态（american)：只吐黑咖啡
+- 普通拿铁态(latte)：黑咖啡加点奶
+- 香草拿铁态（vanillaLatte）：黑咖啡加点奶再加香草糖浆
+- 摩卡咖啡态(mocha)：黑咖啡加点奶再加点巧克力
+### 错误写法
+```js
+class CoffeeMaker {
+  constructor() {
+    /**
+    这里略去咖啡机中与咖啡状态切换无关的一些初始化逻辑
+  **/
+    // 初始化状态，没有切换任何咖啡模式
+    this.state = 'init';
+  }
+
+  // 关注咖啡机状态切换函数
+  changeState(state) {
+    // 记录当前状态
+    this.state = state;
+    if(state === 'american') {
+      // 这里用 console 代指咖啡制作流程的业务逻辑
+      console.log('我只吐黑咖啡');
+    } else if(state === 'latte') {
+      console.log(`给黑咖啡加点奶`);
+    } else if(state === 'vanillaLatte') {
+      console.log('黑咖啡加点奶再加香草糖浆');
+    } else if(state === 'mocha') {
+      console.log('黑咖啡加点奶再加点巧克力');
+    }
+  }
+}
+```
+
+### 职责分离
+```js
+class CoffeeMaker {
+  constructor() {
+    /**
+    这里略去咖啡机中与咖啡状态切换无关的一些初始化逻辑
+  **/
+    // 初始化状态，没有切换任何咖啡模式
+    this.state = 'init';
+  }
+  changeState(state) {
+    // 记录当前状态
+    this.state = state;
+    if(state === 'american') {
+      // 这里用 console 代指咖啡制作流程的业务逻辑
+      this.americanProcess();
+    } else if(state === 'latte') {
+      this.latteProcress();
+    } else if(state === 'vanillaLatte') {
+      this.vanillaLatteProcress();
+    } else if(state === 'mocha') {
+      this.mochaProcress();
+    }
+  }
+  
+  americanProcess() {
+    console.log('我只吐黑咖啡');    
+  }
+  
+  latteProcress() {
+    this.americanProcess();
+    console.log('加点奶');  
+  }
+  
+  vanillaLatteProcress() {
+    this.latteProcress();
+    console.log('再加香草糖浆');
+  }
+  
+  mochaProcress() {
+    this.latteProcress();
+    console.log('再加巧克力');
+  }
+}
+
+const mk = new CoffeeMaker();
+mk.changeState('latte');
+```
+
+### 开放封闭
+```js
+const stateToProcessor = {
+  american() {
+    console.log('我只吐黑咖啡');    
+  },
+  latte() {
+    this.american();
+    console.log('加点奶');  
+  },
+  vanillaLatte() {
+    this.latte();
+    console.log('再加香草糖浆');
+  },
+  mocha() {
+    this.latte();
+    console.log('再加巧克力');
+  }
+}
+
+class CoffeeMaker {
+  constructor() {
+    /**
+    这里略去咖啡机中与咖啡状态切换无关的一些初始化逻辑
+  **/
+    // 初始化状态，没有切换任何咖啡模式
+    this.state = 'init';
+  }
+  
+  // 关注咖啡机状态切换函数
+  changeState(state) {
+    // 记录当前状态
+    this.state = state;
+    // 若状态不存在，则返回
+    if(!stateToProcessor[state]) {
+      return ;
+    }
+    stateToProcessor[state]();
+  }
+}
+
+const mk = new CoffeeMaker();
+mk.changeState('latte');
+```
+> 这种方法仅仅是看上去完美无缺，其中却暗含一个非常重要的隐患——stateToProcessor 里的工序函数，感知不到咖啡机的内部状况。
+
+### 进一步改造
+把咖啡机和它的状态处理函数建立关联。
+```js
+class CoffeeMaker {
+  constructor() {
+    /**
+    这里略去咖啡机中与咖啡状态切换无关的一些初始化逻辑
+  **/
+    // 初始化状态，没有切换任何咖啡模式
+    this.state = 'init';
+    // 初始化牛奶的存储量
+    this.leftMilk = '500ml';
+  }
+  stateToProcessor = {
+    that: this,
+    american() {
+      // 尝试在行为函数里拿到咖啡机实例的信息并输出
+      console.log('咖啡机现在的牛奶存储量是:', this.that.leftMilk)
+      console.log('我只吐黑咖啡');
+    },
+    latte() {
+      this.american()
+      console.log('加点奶');
+    },
+    vanillaLatte() {
+      this.latte();
+      console.log('再加香草糖浆');
+    },
+    mocha() {
+      this.latte();
+      console.log('再加巧克力');
+    }
+  }
+
+  // 关注咖啡机状态切换函数
+  changeState(state) {
+    this.state = state;
+    if (!this.stateToProcessor[state]) {
+      return;
+    }
+    this.stateToProcessor[state]();
+  }
+}
+
+const mk = new CoffeeMaker();
+mk.changeState('latte');
+```
+
+## 策略与状态辨析
+策略模式是对算法的封装。算法和状态对应的行为函数虽然本质上都是行为，但是算法的独立性可高。  
+状态模式需要对主体有感知，来判断接下来是否可执行。  
+总结： 策略模式中函数不依赖调用主体，互相平行。状态模式中的函数和状态主体关联，由状态主体将他们串联，所以不会特别割裂。
+
+## 定义
+允许一个对象在其内部状态改变时改变它的行为，对象看起来似乎修改了它的类。  
+主要解决的是当控制一个对象状态的条件表达式过于复杂时的情况。把状态的判断逻辑转移到表示不同状态的一系列类中，可以把复杂的判断逻辑简化。
+
+---
+# 观察者模式
+## 定义
+观察者模式定义了一种一对多的依赖关系，让多个观察者对象同时监听某一个目标对象，当这个目标对象的状态发生变化时，会通知所有观察者对象，使它们能够自动更新。
+
+## 例子
+发布者：
+* 增加订阅者
+* 通知订阅者
+* 移除订阅者
+
+```js
+// 定义发布者类
+class Publisher {
+  constructor() {
+    this.observers = []
+    console.log('Publisher created')
+  }
+  // 增加订阅者
+  add(observer) {
+    console.log('Publisher.add invoked')
+    this.observers.push(observer)
+  }
+  // 移除订阅者
+  remove(observer) {
+    console.log('Publisher.remove invoked')
+    this.observers.forEach((item, i) => {
+      if (item === observer) {
+        this.observers.splice(i, 1)
+      }
+    })
+  }
+  // 通知所有订阅者
+  notify() {
+    console.log('Publisher.notify invoked')
+    this.observers.forEach((observer) => {
+      observer.update(this)
+    })
+  }
+}
+```
+
+订阅者：被通知，去执行
+```js
+// 定义订阅者类
+class Observer {
+    constructor() {
+        console.log('Observer created')
+    }
+
+    update() {
+        console.log('Observer.update invoked')
+    }
+}
+```
+具体实现
+```js
+// 定义一个具体的需求文档（prd）发布类
+class PrdPublisher extends Publisher {
+    constructor() {
+        super()
+        // 初始化需求文档
+        this.prdState = null
+        // 韩梅梅还没有拉群，开发群目前为空
+        this.observers = []
+        console.log('PrdPublisher created')
+    }
+    
+    // 该方法用于获取当前的prdState
+    getState() {
+        console.log('PrdPublisher.getState invoked')
+        return this.prdState
+    }
+    
+    // 该方法用于改变prdState的值
+    setState(state) {
+        console.log('PrdPublisher.setState invoked')
+        // prd的值发生改变
+        this.prdState = state
+        // 需求文档变更，立刻通知所有开发者
+        this.notify()
+    }
+}
+
+// 订阅者
+class DeveloperObserver extends Observer {
+    constructor() {
+        super()
+        // 需求文档一开始还不存在，prd初始为空对象
+        this.prdState = {}
+        console.log('DeveloperObserver created')
+    }
+    
+    // 重写一个具体的update方法
+    update(publisher) {
+        console.log('DeveloperObserver.update invoked')
+        // 更新需求文档
+        this.prdState = publisher.getState()
+        // 调用工作函数
+        this.work()
+    }
+    
+    // work方法，一个专门搬砖的方法
+    work() {
+        // 获取需求文档
+        const prd = this.prdState
+        // 开始基于需求文档提供的信息搬砖。。。
+        ...
+        console.log('996 begins...')
+    }
+}
+
+// 创建订阅者：前端开发李雷
+const liLei = new DeveloperObserver()
+// 创建订阅者：服务端开发小A（sorry。。。起名字真的太难了）
+const A = new DeveloperObserver()
+// 创建订阅者：测试同学小B
+const B = new DeveloperObserver()
+// 韩梅梅出现了
+const hanMeiMei = new PrdPublisher()
+// 需求文档出现了
+const prd = {
+    // 具体的需求内容
+    ...
+}
+// 韩梅梅开始拉群
+hanMeiMei.add(liLei)
+hanMeiMei.add(A)
+hanMeiMei.add(B)
+// 韩梅梅发送了需求文档，并@了所有人
+hanMeiMei.setState(prd)
+```
+
+## vue中的响应原理
+* observer（监听器）：注意，此 observer 非彼 observer。在我们上节的解析中，observer 作为设计模式中的一个角色，代表“订阅者”。但在Vue数据双向绑定的角色结构里，所谓的 observer 不仅是一个数据监听器，它还需要对监听到的数据进行转发——也就是说它同时还是一个发布者。
+* watcher（订阅者）：observer 把数据转发给了真正的订阅者——watcher对象。watcher 接收到新的数据后，会去更新视图。
+* compile（编译器）：MVVM 框架特有的角色，负责对每个节点元素指令进行扫描和解析，指令的数据初始化、订阅者的创建这些“杂活”也归它管~
+![](/images/设计模式-1.jpg)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
