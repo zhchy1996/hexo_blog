@@ -1383,14 +1383,213 @@ hanMeiMei.setState(prd)
 * compile（编译器）：MVVM 框架特有的角色，负责对每个节点元素指令进行扫描和解析，指令的数据初始化、订阅者的创建这些“杂活”也归它管~
 ![](/images/设计模式-1.jpg)
 
+### 实现observer
+```js
+// observe方法遍历并包装对象属性
+function observe(target) {
+    // 若target是一个对象，则遍历它
+    if(target && typeof target === 'object') {
+        Object.keys(target).forEach((key)=> {
+            // defineReactive方法会给目标属性装上“监听器”
+            defineReactive(target, key, target[key])
+        })
+    }
+}
 
+// 定义defineReactive方法
+function defineReactive(target, key, val) {
+    // 属性值也可能是object类型，这种情况下需要调用observe进行递归遍历
+    const dep = new Dep()
+    observe(val)
+    // 为当前属性安装监听器
+    Object.defineProperty(target, key, {
+         // 可枚举
+        enumerable: true,
+        // 不可配置
+        configurable: false, 
+        get: function () {
+            return val;
+        },
+        // 监听器函数
+        set: function (value) {
+            dep.notify();
+        }
+    });
+}
+```
 
+### 实现订阅者
+```js
+// 定义订阅者类Dep
+class Dep {
+    constructor() {
+        // 初始化订阅队列
+        this.subs = []
+    }
+    
+    // 增加订阅者
+    addSub(sub) {
+        this.subs.push(sub)
+    }
+    
+    // 通知订阅者（是不是所有的代码都似曾相识？）
+    notify() {
+        this.subs.forEach((sub)=>{
+            sub.update()
+        })
+    }
+}
+```
 
+## 实现一个Event Bus/ Event Emitter
+全局事件总线，严格来说不能说是观察者模式，而是发布-订阅模式。
 
+### 在Vue中使用Event Bus来实现组件间的通讯
+```js
+// event buss
+const EventBus = new Vue()
+export default EventBus
 
+// main.js
+import bus from 'EventBus的文件路径'
+Vue.prototype.bus = bus
 
+// sub
+// 这里func指someEvent这个事件的监听函数
+this.bus.$on('someEvent', func)
 
+// notify
+// 这里params指someEvent这个事件被触发时回调函数接收的入参
+this.bus.$emit('someEvent', params)
+```
+整个调用过程中，没有出现具体的发布者和订阅者（比如上节的PrdPublisher和DeveloperObserver），全程只有bus这个东西一个人在疯狂刷存在感。这就是全局事件总线的特点——所有事件的发布/订阅操作，必须经由事件中心，禁止一切“私下交易”！
 
+```js
+// 实现一个event bus
+class EventEmitter {
+  constructor() {
+    // handlers是一个map，用于存储事件与回调之间的对应关系
+    this.handlers = {}
+  }
+
+  // on方法用于安装事件监听器，它接受目标事件名和回调函数作为参数
+  on(eventName, cb) {
+    // 先检查一下目标事件名有没有对应的监听函数队列
+    if (!this.handlers[eventName]) {
+      // 如果没有，那么首先初始化一个监听函数队列
+      this.handlers[eventName] = []
+    }
+
+    // 把回调函数推入目标事件的监听函数队列里去
+    this.handlers[eventName].push(cb)
+  }
+
+  // emit方法用于触发目标事件，它接受事件名和监听函数入参作为参数
+  emit(eventName, ...args) {
+    // 检查目标事件是否有监听函数队列
+    if (this.handlers[eventName]) {
+      // 如果有，则逐个调用队列里的回调函数
+      this.handlers[eventName].forEach((callback) => {
+        callback(...args)
+      })
+    }
+  }
+
+  // 移除某个事件回调队列里的指定回调函数
+  off(eventName, cb) {
+    const callbacks = this.handlers[eventName]
+    const index = callbacks.indexOf(cb)
+    if (index !== -1) {
+      callbacks.splice(index, 1)
+    }
+  }
+
+  // 为事件注册单次监听器
+  once(eventName, cb) {
+    // 对回调函数进行包装，使其执行完毕自动被移除
+    const wrapper = (...args) => {
+      cb(...args)
+      this.off(eventName, wrapper)
+    }
+    this.on(eventName, wrapper)
+  }
+}
+```
+> [FaceBook推出的通用EventEmiiter库](https://github.com/facebookarchive/emitter)
+
+## 观察者模式与发布-订阅模式的区别是什么
+回到我们上文的例子里。韩梅梅把所有的开发者拉了一个群，直接把需求文档丢给每一位群成员，这种发布者直接触及到订阅者的操作，叫观察者模式。但如果韩梅梅没有拉群，而是把需求文档上传到了公司统一的需求平台上，需求平台感知到文件的变化、自动通知了每一位订阅了该文件的开发者，这种发布者不直接触及到订阅者、而是由统一的第三方来完成实际的通信的操作，叫做发布-订阅模式。
+
+观察者模式，解决的其实是模块间的耦合问题，有它在，即便是两个分离的、毫不相关的模块，也可以实现数据通信。但观察者模式仅仅是减少了耦合，并没有完全地解决耦合问题——被观察者必须去维护一套观察者的集合，这些观察者必须实现统一的方法供被观察者调用，两者之间还是有着说不清、道不明的关系。
+
+而发布-订阅模式，则是快刀斩乱麻了——发布者完全不用感知订阅者，不用关心它怎么实现回调方法，事件的注册和触发都发生在独立于双方的第三方平台（事件总线）上。发布-订阅模式下，实现了完全地解耦。
+
+但这并不意味着，发布-订阅模式就比观察者模式“高级”。在实际开发中，我们的模块解耦诉求并非总是需要它们完全解耦。如果两个模块之间本身存在关联，且这种关联是稳定的、必要的，那么我们使用观察者模式就足够了。而在模块与模块之间独立性较强、且没有必要单纯为了数据通信而强行为两者制造依赖的情况下，我们往往会倾向于使用发布-订阅模式。
+
+---
+# 迭代器模式
+迭代器模式提供一种方法顺序访问一个聚合对象中的各个元素，而又不暴露该对象的内部表示。
+
+## ES6对迭代器的实现
+ES6约定，任何数据结构只要具备Symbol.iterator属性（这个属性就是Iterator的具体实现，它本质上是当前数据结构默认的迭代器生成函数），就可以被遍历——准确地说，是被for...of...循环和迭代器的next方法遍历。 事实上，for...of...的背后正是对next方法的反复调用。
+
+```js
+const arr = [1, 2, 3]
+// 通过调用iterator，拿到迭代器对象
+const iterator = arr[Symbol.iterator]()
+
+// 对迭代器对象执行next，就能逐个访问集合的成员
+iterator.next()
+iterator.next()
+iterator.next()
+```
+> [迭代器协议](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Iteration_protocols)
+
+## 实现迭代器生成函数
+```js
+// 编写一个迭代器生成函数
+function *iteratorGenerator() {
+    yield '1号选手'
+    yield '2号选手'
+    yield '3号选手'
+}
+
+const iterator = iteratorGenerator()
+
+iterator.next()
+iterator.next()
+iterator.next()
+```
+实现这个语法糖
+```js
+// 定义生成器函数，入参是任意集合
+function iteratorGenerator(list) {
+    // idx记录当前访问的索引
+    var idx = 0
+    // len记录传入集合的长度
+    var len = list.length
+    return {
+        // 自定义next方法
+        next: function() {
+            // 如果索引还没有超出集合长度，done为false
+            var done = idx >= len
+            // 如果done为false，则可以继续取值
+            var value = !done ? list[idx++] : undefined
+            
+            // 将当前值与遍历是否完毕（done）返回
+            return {
+                done: done,
+                value: value
+            }
+        }
+    }
+}
+
+var iterator = iteratorGenerator(['1号选手', '2号选手', '3号选手'])
+iterator.next()
+iterator.next()
+iterator.next()
+```
 
 
 
