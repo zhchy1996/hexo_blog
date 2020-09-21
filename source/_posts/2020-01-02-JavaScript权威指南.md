@@ -1,5 +1,6 @@
+---
 title: JavaScript权威指南
-cription: JavaScript权威指南笔记
+description: JavaScript权威指南笔记
 categories:
   - JavaScript
 tags:
