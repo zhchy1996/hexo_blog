@@ -1,3 +1,12 @@
+---
+title: yqg npm i
+description: yqg npm install
+categories:
+  - 工具
+tags:
+  - 工具
+date: 2020-09-10 18:16:00
+---
 # 依赖处理
 SPA与SSR均会先运行性一次`npm install --unsafe-perm`安装所有依赖，在build后进入build文件夹运行`npm i --production --unsafe-perm --no-audit --package-lock false`
 
