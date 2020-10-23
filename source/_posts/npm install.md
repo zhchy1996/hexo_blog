@@ -35,7 +35,7 @@ Set to true to suppress the UID/GID switching when running package scripts. If s
 便于在使用root账户来运行npm
 
 ## no-audit
-![a4766485b8ed595f613aaabad5f6ea89.png](../images/npm-install.png)
+![a4766485b8ed595f613aaabad5f6ea89.png](/images/npm-install.png)
 在通过npm官方源运行`npm i`的时候会默认向服务器请求包安全数据，如果使用这个参数则不会发送这个请求
 
 ## package-lock false
