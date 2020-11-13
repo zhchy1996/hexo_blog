@@ -25,7 +25,7 @@ date: 2020-10-23 19:16:00
 清除掉所有弹窗，这个放在在Vue原型上暴露，并在路由 `beforeEach`调用
 
 ### template
-#### antd组件
+主要是 antd 组件
 默认附带参数有
 * vsible 控制是否展示
 * afterClose 完全关闭后的回调，这里传入的是 `clearModal`方法
