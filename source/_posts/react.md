@@ -389,11 +389,138 @@ class App extends React.Component {
 
 ---
 ## 错误边界
+* 错误边界是一种 React 组件，这种组件可以捕获并打印发生在其子组件树任何位置的 JavaScript 错误，并且，它会渲染出备用 UI
+* 任何未被错误边界获取的错误将会导致整个 React 组件树被卸载
+* 无法捕获以下错误
+    * 时间处理
+    * 异步代码(如`setTimeout`或`requestAnimationFrame`回调函数)
+    * 服务端渲染
+    * 自身抛出的错误
+* 如果一个 class 组件中定义了`static getDerivedStateFromError()`或`componentDidCatch()`这两个生命周期方法中的任意一个（或两个）时，那么它就变成一个错误边界，前者用于渲染备用UI，后者用于打印错误信息
+```js
+class Inner extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0
+    }
+    this.handleClick = this.handleClick.bind(this);
+  }
 
+  handleClick () {
+    this.setState(state => state.count += 1)
+  }
 
+  render() {
+    if (this.state.count === 5) throw new Error('count is 5')
+    return <div onClick={this.handleClick}>{this.state.count}</div>
+  }
+}
 
+class ErrorDemo extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false
+    }
+  }
 
+  static getDerivedStateFromError(error) {
+    console.log(error)
+    return {
+      hasError: true
+    };
+  }
 
+  componentDidCatch(error, errorInfo) {
+    console.log('catch', error, errorInfo);
+  }
+
+  render() {
+    return (
+      this.state.hasError
+      ? <div>error</div>
+      : this.props.children
+    )
+  }
+}
+
+ReactDOM.render(
+  <ErrorDemo>
+    <Inner></Inner>
+  </ErrorDemo>,
+  document.getElementById('root')
+);
+```
+* 如果直接抛出一个错误页面依然会报错
+* 无法捕捉事件处理器内部的错误，可以使用`try/catch`
+
+---
+## Refs & DOM
+提供了在经典数据流之外强制修改子组件或DOM的方式。
+* 何时使用 Refs
+    * 管理焦点，文本选择或媒体播放
+    * 触发强制动画
+    * 集成第三方 DOM 库
+* 使用
+    * 创建 Refs
+    ```js
+    class MyComponent extends React.Component {
+        constructor(props) {
+            super(props);
+            this.myRef = React.createRef();
+        }
+        render() {
+            return <div ref={this.myRef} />;
+        }
+    }
+    ```
+    * 访问 Refs `const node = this.myRef.current;`
+    * ref 用于 HTML 元素时`ref.current`为底层 DOM,用于自定义 class 组件时,current 为挂载实例
+    * 不能在函数组件上使用`ref`属性，因为没有实例, 可以使用`forwardRef`(可与`useImperativeHandle`结合使用)，在函数组件内部使用 ref 不受影响
+* 可以给`ref`传入函数，函数会在挂载时执行，并且在卸载时传入null
+
+---
+## Refs 转发
+* Ref 转发是一个可选特性，其允许某些组件接收 ref，并将其向下传递（换句话说，“转发”它）给子组件，这样就可以在外部的获取到组件内部的 ref。
+```js
+const FancyButton = React.forwardRef((props, ref) => (
+  <button ref={ref} className="FancyButton">
+    {props.children}
+  </button>
+));
+
+// 你可以直接获取 DOM button 的 ref：
+const ref = React.createRef();
+<FancyButton ref={ref}>Click me!</FancyButton>;
+```
+* 高阶组件中转发(看完高阶组件再看)
+
+---
+## Fragments
+* React 中的一个常见模式是一个组件返回多个元素。Fragments 允许你将子列表分组，而无需向 DOM 添加额外节点
+```js
+render() {
+  return (
+    <React.Fragment>
+      <ChildA />
+      <ChildB />
+      <ChildC />
+    </React.Fragment>
+  );
+}
+```
+* 支持短语法`<> </>`，这种写法不支持`key`
+
+---
+## 高阶组件 HOC
+* 高阶组件是参数为组件，返回值为新组件的函数，`const EnhancedComponent = higherOrderComponent(WrappedComponent);`
+* 用 HOC 替换了之前的 mixins，至于为什么要放弃 mixins 可以参考[这个](https://zh-hans.reactjs.org/blog/2016/07/13/mixins-considered-harmful.html)
+> react是函数式风格，而mixins更偏向于面向对象  
+> mixins使代码变的复杂并且可维护性变差
+> 会有许多隐式依赖
+> 会导致命名冲突，并难以重构
+> mixins 的互相依赖和拓展会让代码逐渐复杂化
 
 
 
