@@ -522,8 +522,177 @@ render() {
 > 会导致命名冲突，并难以重构
 > mixins 的互相依赖和拓展会让代码逐渐复杂化
 
+### 用法
+组件一
+```js
+class CommentList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleChange = this.handleChange.bind(this);
+    this.state = {
+      // 假设 "DataSource" 是个全局范围内的数据源变量
+      comments: DataSource.getComments()
+    };
+  }
 
+  componentDidMount() {
+    // 订阅更改
+    DataSource.addChangeListener(this.handleChange);
+  }
 
+  componentWillUnmount() {
+    // 清除订阅
+    DataSource.removeChangeListener(this.handleChange);
+  }
+
+  handleChange() {
+    // 当数据源更新时，更新组件状态
+    this.setState({
+      comments: DataSource.getComments()
+    });
+  }
+
+  render() {
+    return (
+      <div>
+        {this.state.comments.map((comment) => (
+          <Comment comment={comment} key={comment.id} />
+        ))}
+      </div>
+    );
+  }
+}
+```
+组件二
+```js
+class BlogPost extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleChange = this.handleChange.bind(this);
+    this.state = {
+      blogPost: DataSource.getBlogPost(props.id)
+    };
+  }
+
+  componentDidMount() {
+    DataSource.addChangeListener(this.handleChange);
+  }
+
+  componentWillUnmount() {
+    DataSource.removeChangeListener(this.handleChange);
+  }
+
+  handleChange() {
+    this.setState({
+      blogPost: DataSource.getBlogPost(this.props.id)
+    });
+  }
+
+  render() {
+    return <TextBlock text={this.state.blogPost} />;
+  }
+}
+```
+使用HOC
+```js
+const CommentListWithSubscription = withSubscription(
+  CommentList,
+  (DataSource) => DataSource.getComments()
+);
+
+const BlogPostWithSubscription = withSubscription(
+  BlogPost,
+  (DataSource, props) => DataSource.getBlogPost(props.id)
+);
+
+// 此函数接收一个组件...
+function withSubscription(WrappedComponent, selectData) {
+  // ...并返回另一个组件...
+  return class extends React.Component {
+    constructor(props) {
+      super(props);
+      this.handleChange = this.handleChange.bind(this);
+      this.state = {
+        data: selectData(DataSource, props)
+      };
+    }
+
+    componentDidMount() {
+      // ...负责订阅相关的操作...
+      DataSource.addChangeListener(this.handleChange);
+    }
+
+    componentWillUnmount() {
+      DataSource.removeChangeListener(this.handleChange);
+    }
+
+    handleChange() {
+      this.setState({
+        data: selectData(DataSource, this.props)
+      });
+    }
+
+    render() {
+      // ... 并使用新数据渲染被包装的组件!
+      // 请注意，我们可能还会传递其他属性
+      return <WrappedComponent data={this.state.data} {...this.props} />;
+    }
+  };
+}
+```
+
+#### 不要改变原始组件。使用组合。
+这样是不对的
+```js
+function logProps(InputComponent) {
+  InputComponent.prototype.componentDidUpdate = function(prevProps) {
+    console.log('Current props: ', this.props);
+    console.log('Previous props: ', prevProps);
+  };
+  // 返回原始的 input 组件，暗示它已经被修改。
+  return InputComponent;
+}
+
+// 每次调用 logProps 时，增强组件都会有 log 输出。
+const EnhancedComponent = logProps(InputComponent);
+```
+正确做法
+```js
+function logProps(WrappedComponent) {
+  return class extends React.Component {
+    componentDidUpdate(prevProps) {
+      console.log('Current props: ', this.props);
+      console.log('Previous props: ', prevProps);
+    }
+    render() {
+      // 将 input 组件包装在容器中，而不对其进行修改。Good!
+      return <WrappedComponent {...this.props} />;
+    }
+  }
+}
+```
+HOC 与容器组件模式之间有相似之处。容器组件担任将高级和低级关注点分离的责任，由容器管理订阅和状态，并将 prop 传递给处理 UI 的组件。HOC 使用容器作为其实现的一部分，你可以将 HOC 视为参数化容器组件。
+
+#### 约定：将不相关的 props 传递给被包裹的组件
+HOC 为组件添加特性。自身不应该大幅改变约定。HOC 返回的组件与原组件应保持类似的接口。
+```js
+render() {
+  // 过滤掉非此 HOC 额外的 props，且不要进行透传
+  const { extraProp, ...passThroughProps } = this.props;
+
+  // 将 props 注入到被包装的组件中。
+  // 通常为 state 的值或者实例方法。
+  const injectedProp = someStateOrInstanceMethod;
+
+  // 将 props 传递给被包装组件
+  return (
+    <WrappedComponent
+      injectedProp={injectedProp}
+      {...passThroughProps}
+    />
+  );
+}
+```
 
 
 
