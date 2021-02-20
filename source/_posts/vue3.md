@@ -78,3 +78,112 @@ export default {
   }
 }
 ```
+
+---
+### 生命周期钩子
+选项式 API | setup
+-|-
+`beforeMount`|`onBeforeMount`
+`mounted`|`onMounted`
+`beforeUpdate`|`onBeforeUpdate`
+`updated`|`onUpdated`
+`beforeUnmount`|`onBeforeUnmount`
+`unmounted`|`onUnmounted`
+`errorCaptured`|`onErrorCaptured`
+`renderTracked`|`onRenderTracked`
+`renderTriggered`|`onRenderTriggered`
+
+由于 setup 是围绕 beforeCreate 和 created 运行的，所以不用再 setup 中定义它们。
+
+```js
+export default {
+  setup() {
+    // mounted
+    onMounted(() => {
+      console.log('Component is mounted!')
+    })
+  }
+}
+```
+
+---
+### 提供 / 注入
+
+
+## 提供 / 注入
+```js
+const app = Vue.createApp({})
+
+app.component('todo-list', {
+  data() {
+    return {
+      todos: ['Feed a cat', 'Buy tickets']
+    }
+  },
+  provide: {
+    user: 'John Doe'
+  },
+  template: `
+    <div>
+      {{ todos.length }}
+      <!-- 模板的其余部分 -->
+    </div>
+  `
+})
+
+app.component('todo-list-statistics', {
+  inject: ['user'],
+  created() {
+    console.log(`Injected property: ${this.user}`) // > 注入 property: John Doe
+  }
+})
+```
+
+```js
+// 这样写不生效
+app.component('todo-list', {
+  data() {
+    return {
+      todos: ['Feed a cat', 'Buy tickets']
+    }
+  },
+  provide: {
+    todoLength: this.todos.length // 将会导致错误 'Cannot read property 'length' of undefined`
+  },
+  template: `
+    ...
+  `
+})
+// 这样写才可以
+app.component('todo-list', {
+  data() {
+    return {
+      todos: ['Feed a cat', 'Buy tickets']
+    }
+  },
+  provide() {
+    return {
+      todoLength: this.todos.length
+    }
+  },
+  template: `
+    ...
+  `
+})
+```
+
+这种形式的注入传递的变量和对象是非响应式的，如果需要可以传递 ref 和 reactive 变量
+
+```js
+app.component('todo-list', {
+  // ...
+  provide() {
+    return {
+      todoLength: Vue.computed(() => this.todos.length)
+    }
+  }
+})
+```
+
+
+
