@@ -108,6 +108,238 @@ export default {
 
 ---
 ### 提供 / 注入
+使用 Provide
+```vue
+<!-- src/components/MyMap.vue -->
+<template>
+  <MyMarker />
+</template>
+
+<script>
+import { provide } from 'vue'
+import MyMarker from './MyMarker.vue
+
+export default {
+  components: {
+    MyMarker
+  },
+  setup() {
+    provide('location', 'North Pole')
+    provide('geolocation', {
+      longitude: 90,
+      latitude: 135
+    })
+  }
+}
+</script>
+```
+
+使用注入
+```vue
+<!-- src/components/MyMarker.vue -->
+<script>
+import { inject } from 'vue'
+
+export default {
+  setup() {
+    const userLocation = inject('location', 'The Universe')
+    const userGeolocation = inject('geolocation')
+
+    return {
+      userLocation,
+      userGeolocation
+    }
+  }
+}
+</script>
+```
+
+添加相应性
+```vue
+<!-- src/components/MyMap.vue -->
+<template>
+  <MyMarker />
+</template>
+
+<script>
+import { provide, reactive, ref } from 'vue'
+import MyMarker from './MyMarker.vue
+
+export default {
+  components: {
+    MyMarker
+  },
+  setup() {
+    const location = ref('North Pole')
+    const geolocation = reactive({
+      longitude: 90,
+      latitude: 135
+    })
+
+    provide('location', location)
+    provide('geolocation', geolocation)
+  }
+}
+</script>
+```
+
+修改响应式 property
+**建议尽可能，在提供者内保持响应式 property 的任何更改。**
+```vue
+<!-- src/components/MyMap.vue -->
+<template>
+  <MyMarker />
+</template>
+
+<script>
+import { provide, reactive, ref } from 'vue'
+import MyMarker from './MyMarker.vue
+
+export default {
+  components: {
+    MyMarker
+  },
+  setup() {
+    const location = ref('North Pole')
+    const geolocation = reactive({
+      longitude: 90,
+      latitude: 135
+    })
+
+    provide('location', location)
+    provide('geolocation', geolocation)
+
+    return {
+      location
+    }
+  },
+  methods: {
+      // 在此处更改
+    updateLocation() {
+      this.location = 'South Pole'
+    }
+  }
+}
+</script>
+```
+
+如果需要在注入组件内修改数据，则最好提供一个方法来修改
+
+```vue
+<!-- src/components/MyMap.vue -->
+<template>
+  <MyMarker />
+</template>
+
+<script>
+import { provide, reactive, ref } from 'vue'
+import MyMarker from './MyMarker.vue
+
+export default {
+  components: {
+    MyMarker
+  },
+  setup() {
+    const location = ref('North Pole')
+    const geolocation = reactive({
+      longitude: 90,
+      latitude: 135
+    })
+
+    const updateLocation = () => {
+      location.value = 'South Pole'
+    }
+
+    provide('location', location)
+    provide('geolocation', geolocation)
+    // 提供一个修改方法
+    provide('updateLocation', updateLocation)
+  }
+}
+</script>
+
+<!-- src/components/MyMarker.vue -->
+<script>
+import { inject } from 'vue'
+
+export default {
+  setup() {
+    const userLocation = inject('location', 'The Universe')
+    const userGeolocation = inject('geolocation')
+    // 需要时使用这个方法修改
+    const updateUserLocation = inject('updateLocation')
+
+    return {
+      userLocation,
+      userGeolocation,
+      updateUserLocation
+    }
+  }
+}
+</script>
+```
+
+如果需要保护提供的数据不被篡改的话可以使用 `readonly`
+```vue
+<!-- src/components/MyMap.vue -->
+<template>
+  <MyMarker />
+</template>
+
+<script>
+import { provide, reactive, readonly, ref } from 'vue'
+import MyMarker from './MyMarker.vue
+
+export default {
+  components: {
+    MyMarker
+  },
+  setup() {
+    const location = ref('North Pole')
+    const geolocation = reactive({
+      longitude: 90,
+      latitude: 135
+    })
+
+    const updateLocation = () => {
+      location.value = 'South Pole'
+    }
+    // 在此处使用readonly
+    provide('location', readonly(location))
+    provide('geolocation', readonly(geolocation))
+    provide('updateLocation', updateLocation)
+  }
+}
+</script>
+```
+
+---
+### 模板引用
+```js
+template> 
+  <div ref="root">This is a root element</div>
+</template>
+
+<script>
+  import { ref, onMounted } from 'vue'
+
+  export default {
+    setup() {
+      const root = ref(null)
+
+      onMounted(() => {
+        // DOM元素将在初始渲染后分配给ref
+        console.log(root.value) // <div>这是根元素</div>
+      })
+
+      return {
+        root
+      }
+    }
+  }
+</script>
+```
+由于我们使用了`ref="root"`，所以
 
 
 ## 提供 / 注入
@@ -184,6 +416,5 @@ app.component('todo-list', {
   }
 })
 ```
-
 
 
