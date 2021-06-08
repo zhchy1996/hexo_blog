@@ -1,7 +1,7 @@
 ---
 title: ios safe-area-inset-top存在延迟
 date: 2021-06-08 18:14:13
-description:
+description: 解决使用safe-area-inset-top时使用offsetHeight获取元素高度不准确问题
 tags:
 ---
 

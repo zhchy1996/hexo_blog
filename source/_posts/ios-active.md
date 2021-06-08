@@ -1,7 +1,7 @@
 ---
 title: ios 伪类失效
 date: 2021-06-08 18:02:05
-description:
+description: 解决ios中按钮的`:active`失效
 tags:
 ---
 
